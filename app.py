@@ -20,13 +20,13 @@ GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
 MONGO_URI = os.environ.get("MONGO_URI")
 
 if PINECONE_API_KEY is None or GROQ_API_KEY is None or MONGO_URI is None:
-    raise ValueError("PINECONE_API_KEY, GROQ_API_KEY, and MONGO_URI must be set in environment variables.")
+    raise ValueError("PINECONE_API_KEY, GROQ_API_KEY, and MONGO_URI")
 
 os.environ["PINECONE_API_KEY"] = PINECONE_API_KEY
 os.environ["GROQ_API_KEY"] = GROQ_API_KEY
 
 mongo_client = MongoClient(MONGO_URI)
-db = mongo_client.get_default_database() or mongo_client["medical_chatbot"]
+db = mongo_client["medical_chatbot"]
 chats_collection = db.chats
 
 embeddings = download_huggingface_embeddings()
