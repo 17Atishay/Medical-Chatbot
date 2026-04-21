@@ -13,4 +13,9 @@ flask>=3.0,<4
 pypdf>=4.0,<5
 python-dotenv>=1.0,<2
 
+langgraph>=0.2.20,<0.3
+pydantic==2.8.2
+typing-extensions>=4.9,<5
+pymongo>=4.0,<5
+
 -e .
