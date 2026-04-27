@@ -82,51 +82,147 @@ rag_generation_prompt = ChatPromptTemplate.from_messages(
 )
 
 
-issup_prompt = ChatPromptTemplate.from_messages(
-    [
-        (
-            "system",
-            "You are a medical fact-checking assistant.\n"
-            "Your task is to verify whether the ANSWER is supported by the CONTEXT.\n\n"
-            "Return JSON with keys: issup, evidence.\n"
-            "issup must be one of: fully_supported, partially_supported, no_support.\n\n"
-            "Evaluation criteria:\n"
-            "- fully_supported: Every medical claim is directly supported by the CONTEXT.\n"
-            "- partially_supported: Some claims are supported, but the answer includes additional information not present in CONTEXT.\n"
-            "- no_support: The main claims are not supported or contradict the CONTEXT.\n\n"
-            "Examples:\n"
-            "Example 1:\n"
-            "CONTEXT: 'Symptoms of diabetes include increased thirst and frequent urination.'\n"
-            "ANSWER: 'Diabetes symptoms include increased thirst and frequent urination.'\n"
-            "OUTPUT: fully_supported\n\n"
-            "Example 2:\n"
-            "CONTEXT: 'Symptoms of diabetes include increased thirst and frequent urination.'\n"
-            "ANSWER: 'Diabetes symptoms include increased thirst, frequent urination, and fatigue.'\n"
-            "OUTPUT: partially_supported\n\n"
-            "Reason: 'fatigue' is not present in CONTEXT.\n\n"
-            "Example 3:\n"
-            "CONTEXT: 'Hypertension treatment includes ACE inhibitors.'\n"
-            "ANSWER: 'Hypertension is treated using insulin.'\n"
-            "OUTPUT: no_support\n"
-            "Reason: incorrect and unsupported treatment.\n\n"
-            "Strict rules:\n"
-            "- Be extremely strict.\n"
-            "- Do NOT use outside medical knowledge.\n"
-            "- Even small unsupported additions → partially_supported.\n"
-            "- Contradictions → no_support.\n\n"
-            "Evidence:\n"
-            "- Provide up to 3 short exact quotes from CONTEXT.\n"
-            "- If no support exists, return an empty list."
-        ),
-        (
-            "human",
-            "Question:\n{question}\n\n"
-            "Answer:\n{answer}\n\n"
-            "Context:\n{context}"
-        ),
-    ]
-)
+# issup_prompt = ChatPromptTemplate.from_messages(
+#     [
+#         (
+#             "system",
+#             "You are a medical fact-checking assistant.\n"
+#             "Your task is to verify whether the ANSWER is supported by the CONTEXT.\n\n"
+#             "Return JSON with keys: issup, evidence.\n"
+#             "issup must be one of: fully_supported, partially_supported, no_support.\n\n"
+#             "Evaluation criteria:\n"
+#             "- fully_supported: Every medical claim is directly supported by the CONTEXT.\n"
+#             "- partially_supported: Some claims are supported, but the answer includes additional information not present in CONTEXT.\n"
+#             "- no_support: The main claims are not supported or contradict the CONTEXT.\n\n"
+#             "Examples:\n"
+#             "Example 1:\n"
+#             "CONTEXT: 'Symptoms of diabetes include increased thirst and frequent urination.'\n"
+#             "ANSWER: 'Diabetes symptoms include increased thirst and frequent urination.'\n"
+#             "OUTPUT: fully_supported\n\n"
+#             "Example 2:\n"
+#             "CONTEXT: 'Symptoms of diabetes include increased thirst and frequent urination.'\n"
+#             "ANSWER: 'Diabetes symptoms include increased thirst, frequent urination, and fatigue.'\n"
+#             "OUTPUT: partially_supported\n\n"
+#             "Reason: 'fatigue' is not present in CONTEXT.\n\n"
+#             "Example 3:\n"
+#             "CONTEXT: 'Hypertension treatment includes ACE inhibitors.'\n"
+#             "ANSWER: 'Hypertension is treated using insulin.'\n"
+#             "OUTPUT: no_support\n"
+#             "Reason: incorrect and unsupported treatment.\n\n"
+#             "Strict rules:\n"
+#             "- Give structured JSON output only in this format:\n"
+#             "{{\n"
+#             "  \"issup\": \"fully_supported\",\n"
+#             "  \"evidence\": [\n"
+#             "    \"quote1\",\n"
+#             "    \"quote2\"\n"
+#             "  ]\n"
+#             "}}\n"
+#             "- Be extremely strict.\n"
+#             "- Do NOT use outside medical knowledge.\n"
+#             "- Even small unsupported additions → partially_supported.\n"
+#             "- Contradictions → no_support.\n\n"
+#             "Evidence:\n"
+#             "- Provide up to 3 short exact quotes from CONTEXT.\n"
+#             "- If no support exists, return an empty list."
+#         ),
+#         (
+#             "human",
+#             "Question:\n{question}\n\n"
+#             "Answer:\n{answer}\n\n"
+#             "Context:\n{context}"
+#         ),
+#     ]
+# )
 
+issup_prompt = ChatPromptTemplate.from_messages(
+[
+(
+"system",
+"""You are a medical fact-checking assistant.
+
+Verify whether ANSWER is supported ONLY by CONTEXT.
+
+Use NO outside medical knowledge.
+
+Return ONLY valid JSON.
+Do not return markdown.
+Do not explain.
+Do not add text before or after JSON.
+
+Return exactly:
+
+{{
+  "issup": "fully_supported",
+  "evidence": [
+    "quote1",
+    "quote2"
+  ]
+}}
+
+Allowed values for "issup" ONLY:
+- fully_supported
+- partially_supported
+- no_support
+
+Evaluation:
+- fully_supported:
+All claims in ANSWER are supported by CONTEXT.
+
+- partially_supported:
+Some claims are supported, but any extra unsupported detail exists.
+
+- no_support:
+Claims are unsupported or contradicted.
+
+Rules:
+- Be extremely strict.
+- Even one unsupported addition => partially_supported
+- Contradiction => no_support
+- Evidence must contain up to 3 exact short quotes from CONTEXT
+- If no support:
+{{
+  "issup":"no_support",
+  "evidence":[]
+}}
+
+Examples:
+
+CONTEXT:
+Symptoms of diabetes include increased thirst and frequent urination.
+
+ANSWER:
+Diabetes symptoms include increased thirst and frequent urination.
+
+Output:
+{{"issup":"fully_supported","evidence":["increased thirst","frequent urination"]}}
+
+CONTEXT:
+Symptoms of diabetes include increased thirst and frequent urination.
+
+ANSWER:
+Diabetes symptoms include increased thirst, frequent urination and fatigue.
+
+Output:
+{{"issup":"partially_supported","evidence":["increased thirst","frequent urination"]}}
+
+Respond with JSON only.
+"""
+),
+(
+"human",
+"""Question:
+{question}
+
+Answer:
+{answer}
+
+Context:
+{context}
+"""
+)
+]
+)
 
 revise_prompt = ChatPromptTemplate.from_messages(
     [
